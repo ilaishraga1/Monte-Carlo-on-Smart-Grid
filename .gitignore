@@ -1,3 +1,7 @@
+.idea/
+ai_dm/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
