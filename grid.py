@@ -2,7 +2,7 @@ from typing import Tuple, Optional, Union, List
 
 import numpy as np
 from citylearn.citylearn import CityLearnEnv
-from gym.core import ActType, ObsType, RenderFrame
+from gym.core import ActType, ObsType
 
 import ai_dm.Search.defs as defs
 from ai_dm.Environments.gym_envs.gym_problem import GymProblem
@@ -93,28 +93,47 @@ class CityGym(gym.Env):
     def __init__(self):
         super().__init__()
         self.env = CityLearnEnv(schema=Constants.schema_path)
-        num_states = 1000000
+        # num_states = 1000000
 
-        actions_box = self.env.action_space[0]
+        # actions_box = self.env.action_space[0]
 
-        print(len(self.env.action_space))
+        # print(len(self.env.action_space))
 
-        self.action_space = np.arange(-1.0, 1.0, 0.1)
+        self.action_space = np.arange(-1.0, 1.1, 0.1)
         self.num_buildings = 1
 
-        # print(actions_box)
-        # print(actions_box.sample())
-        # aaaa(actions_box)
+        low, high = self.env.observation_space[0].low, self.env.observation_space[0].high
+        print("\n".join([str(x) for x in zip(low, high)]))
+        discrete_features_indices = [0, 1, 2]
+        features_values = []
+        for i in range(low.size):
+            num_values = 5
+            if i in discrete_features_indices:
+                num_values = round(high[i] - low[i] + 1)
+            features_values.append(np.linspace(low[i], high[i], num_values))
 
-        num_actions = len(self.action_space)
-        self.P = {
-            state: {action: [] for action in range(num_actions)}
-            for state in range(num_states)
-        }
+        optional_actions = {action: None for action in self.action_space}
+
+        class P:
+            def __init__(self, citygym):
+                self.citygym = citygym
+
+            def next(self, state, action):
+                env = CityLearnEnv(schema=Constants.schema_path)
+
+            def __getitem__(self, state):
+                # TODO limit the optional actions according to the state
+                return {action: self.next(state, action) for action in self.citygym.action_space}
+
+        self.P = P(self)
+
+        # self.P = {
+        #     state: optional_actions for state in
+        # }
 
         # print(self.step([[0, 0, 0, 0] for i in range(self.num_buildings)]))
 
-    def render(self) -> Optional[Union[RenderFrame, List[RenderFrame]]]:
+    def render(self):
         return self.env.render()
 
     def step(self, action: ActType) -> Tuple[ObsType, float, bool, bool, dict]:
@@ -130,6 +149,3 @@ city_gym = CityGym()
 g = GymProblem(city_gym, city_gym.initial_state())
 best_value, best_node, best_plan, explored_count, ex_terminated = \
     breadth_first_search(problem=g, log=True, log_file=None, iter_limit=defs.NA, time_limit=defs.NA)
-
-
-
