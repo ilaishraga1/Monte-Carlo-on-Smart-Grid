@@ -15,84 +15,17 @@ class Constants:
     schema_path = 'ai_dm/data/schema.json'
 
 
-def action_space_to_dict(aspace):
-    """ Only for box space """
-    return { "high": aspace.high,
-             "low": aspace.low,
-             "shape": aspace.shape,
-             "dtype": str(aspace.dtype)
-    }
-
-
-def env_reset(env):
-    observations = env.reset()
-    action_space = env.action_space
-    observation_space = env.observation_space
-    building_info = env.get_building_information()
-    building_info = list(building_info.values())
-    action_space_dicts = [action_space_to_dict(asp) for asp in action_space]
-    observation_space_dicts = [action_space_to_dict(osp) for osp in observation_space]
-    obs_dict = {"action_space": action_space_dicts,
-                "observation_space": observation_space_dicts,
-                "building_info": building_info,
-                "observation": observations }
-    return obs_dict
-
-
-# env = CityLearnEnv(schema=Constants.schema_path)
-
-# print(f' OBSERVATION SPACES {env.observation_space}')
-# print(f' OBSERVATION SPACE for Builiding ONE is {env.observation_space[0]}')
-#
-# for building in range(5):
-#     print(f' SAMPLE OBSERVATION SPACE for Builiding ONE >>> {len(env.observation_space[building].sample()), env.observation_space[building].sample()}')
-#
-# print(f' ACTION SPACES {env.action_space}')
-# print(f' ACTION SPACE for Builiding ONE is {env.action_space[0]}')
-#
-# # sample some actions
-# for action in range(5):
-#     print(f' SAMPLE ACTION SPACE for Builiding ONE >>> {env.action_space[1].sample()}')
-
-
-def aaaa(box):
-    high = box.high if box.dtype.kind == "f" else box.high.astype("int64") + 1
-    sample = np.empty(box.shape)
-
-    # Masking arrays which classify the coordinates according to interval
-    # type
-    unbounded = ~box.bounded_below & ~box.bounded_above
-    upp_bounded = ~box.bounded_below & box.bounded_above
-    low_bounded = box.bounded_below & ~box.bounded_above
-    bounded = box.bounded_below & box.bounded_above
-
-    ranges = []
-    print(box.shape)
-    # for i in range(box.shape):
-    #     pass
-
-    # Vectorized sampling by interval type
-    sample[unbounded] = box.np_random.normal(size=unbounded[unbounded].shape)
-
-    sample[low_bounded] = (
-        box.np_random.exponential(size=low_bounded[low_bounded].shape)
-        + box.low[low_bounded]
-    )
-
-    sample[upp_bounded] = (
-        -box.np_random.exponential(size=upp_bounded[upp_bounded].shape)
-        + box.high[upp_bounded]
-    )
-
-    sample[bounded] = box.np_random.uniform(
-        low=box.low[bounded], high=high[bounded], size=bounded[bounded].shape
-    )
-
-
 class CityGym(gym.Env):
     def __init__(self):
         super().__init__()
         self.env = CityLearnEnv(schema=Constants.schema_path)
+
+        for i in range(10):
+            result = self.env.step([[0.001]])[0][0]
+            print(result)
+            print("  ".join([str(x) for x in zip(result, self.env.observation_names[0])]))
+        raise Exception("========")
+
         # num_states = 1000000
 
         # actions_box = self.env.action_space[0]
@@ -103,7 +36,7 @@ class CityGym(gym.Env):
         self.num_buildings = 1
 
         low, high = self.env.observation_space[0].low, self.env.observation_space[0].high
-        print("\n".join([str(x) for x in zip(low, high)]))
+        print("\n".join([str(x) for x in enumerate(zip(low, high, self.env.observation_names[0]))]))
         discrete_features_indices = [0, 1, 2]
         features_values = []
         for i in range(low.size):
