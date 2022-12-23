@@ -1,7 +1,6 @@
 from copy import deepcopy
 import numpy as np
 from citylearn.citylearn import CityLearnEnv
-import ai_dm.Search.defs as defs
 from ai_dm.Search.best_first_search import breadth_first_search
 from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
@@ -11,7 +10,7 @@ schema_path = 'ai_dm/data/schema.json'
 num_features = 28
 num_buildings = 1
 num_values_per_feature = 5
-num_actions = 5
+num_actions = 3
 
 
 env = CityLearnEnv(schema=schema_path)
@@ -24,7 +23,7 @@ env = CityLearnEnv(schema=schema_path)
 # actions_box = self.env.action_space[0]
 # print(len(self.env.action_space))
 
-actions = np.linspace(-1.0, 1.1, num_actions)
+actions = np.linspace(-1, 1, num_actions)
 action_space = np.array(np.meshgrid(*[actions for _ in range(num_buildings)])).T.reshape(len(actions)**num_buildings, -1)
 action_space = [[(b, 0, 0, 0) for b in a] for a in action_space]
 
@@ -78,7 +77,7 @@ class GridState:
         return "!"
 
     def is_done(self):
-        return self.done or (self.depth > 5 and self.reward > -0.5)
+        return self.done or (self.depth >= 5 and self.reward > -0.5)
 
     def __str__(self):
         return f" [{self._index}|{self.depth}|{self.reward:.2f}] "
@@ -101,7 +100,7 @@ class CityGym(Problem):
         return [Node(State(node.state.get_key().successor(action)), node, action, node.path_cost + cost)]
 
     def get_action_cost(self, action, state):
-        return sum([sum([c for c in b if c > 0]) for b in action])
+        return 0  # sum([sum([c for c in b if c > 0]) for b in action])
 
     def is_goal_state(self, state):
         return state.get_key().is_done()
@@ -111,7 +110,4 @@ class CityGym(Problem):
 
 
 city_gym = CityGym()
-# g = GymProblem(city_gym, city_gym.initial_state())
-g = city_gym
-best_value, best_node, best_plan, explored_count, ex_terminated = \
-    breadth_first_search(problem=g, log=True, log_file=None, iter_limit=defs.NA, time_limit=defs.NA)
+best_value, best_node, best_plan, explored_count, ex_terminated = breadth_first_search(problem=city_gym, log=True)
