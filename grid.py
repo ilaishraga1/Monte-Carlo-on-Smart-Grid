@@ -10,7 +10,8 @@ from mc_heuristic import heuristic_montecarlo
 schema_path = 'data/schema.json'
 num_features = 28
 num_buildings = 1
-num_values_per_feature = 5
+feature_num_values = 5
+soc_num_values = 10
 num_actions = 5
 
 
@@ -18,25 +19,37 @@ actions = np.linspace(-1, 1, num_actions)
 action_space = np.array(np.meshgrid(*[actions for _ in range(num_buildings)])).T.reshape(len(actions)**num_buildings, -1)
 action_space = [[(b, 0, 0, 0) for b in a] for a in action_space]
 
+
 env = CityLearnEnv(schema=schema_path)
 
-low, high = env.observation_space[0].low, env.observation_space[0].high
-assert low.size == num_features and high.size == num_features
-# print("\n".join([str(x) for x in enumerate(zip(low, high, self.env.observation_names[0]))]))
+
+names, low, high = env.observation_names[0], env.observation_space[0].low, env.observation_space[0].high
+assert low.size == num_features and high.size == num_features and len(names) == num_features
 discrete_features_indices = [0, 1, 2]
-features_values = []
+features_values = {}
 for i in range(num_features):
-    n = num_values_per_feature
+    n = feature_num_values
     if i in discrete_features_indices:
         n = round(high[i] - low[i] + 1)
-    features_values.append(np.linspace(low[i], high[i], n))
+    features_values[names[i]] = np.linspace(low[i], high[i], n)
+
+
+for building in env.buildings:
+    features = ["energy_simulation", "weather", "pricing", "carbon_intensity"]
+    for a in features:
+        a = building.__dict__[f"_Building__{a}"]
+        fields = [x for x in vars(a).keys() if x in building.active_observations]
+        for x in fields:
+            arr = a.__dict__[x]
+            for i in range(arr.size):
+                arr[i] = min(features_values[x], key=lambda v: abs(v - arr[i]))
 
 
 index = 1
 
 
 class CityState:
-    def __init__(self, env, state, done, rewards):
+    def __init__(self, env, done, rewards):
         # assert len(state) == num_buildings
         # assert len(state[0]) == num_features
         global index
@@ -46,17 +59,17 @@ class CityState:
         self.rewards = rewards
         self.done = done
 
-        _state = []
-        for s in state:
-            discrete_s = [min(features_values[i], key=lambda x: abs(x - s[i])) for i in range(num_features)]
-            _state.append(tuple(discrete_s))
-        self._state = tuple(_state)
-        # soc = [env.buildings[i].electrical_storage.soc[-1] for i in range(num_buildings)]
-
     def successor(self, action):
-        env_copy = deepcopy(self.env)
-        state, reward, done, info = env_copy.step(action)
-        return CityState(env_copy, state, done, self.rewards + [sum(reward)])
+        env = deepcopy(self.env)
+        state, reward, done, info = env.step(action)
+        for building in env.buildings:
+            features = [f for f in ["cooling_storage_soc", "heating_storage_soc", "dhw_storage_soc", "electrical_storage_soc"] if f in building.active_observations]
+            for a in features:
+                aa = f"_Building__{a[:-4]}"
+                values = np.linspace(0, building.__dict__[aa].capacity, soc_num_values)
+                building.__dict__[aa].soc[-1] = min(values, key=lambda v: abs(v - building.__dict__[aa].soc[-1]))
+                # print(building.__dict__[f"_Building__{a[:-4]}"].soc)
+        return CityState(env, done, self.rewards + [sum(reward)])
 
     def get_applicable_actions(self):
         # TODO return only the optional actions instead of all of them
@@ -80,13 +93,8 @@ class CityState:
 
 
 class CityProblem(Problem):
-    def __init__(self, random_start=False):
-        if random_start:
-            state = tuple([tuple(env.observation_space[0].sample()) for _ in range(num_buildings)])
-        else:
-            building = (8.0, 1.0, 1.0, 22.456795, 24.281796, 24.544542, 22.8684, 92.53819, 70.58964, 71.346596, 85.56254, 832.66046, 936.07117, 208.70508, 347.4476, 741.96875, 235.003, 108.57185, 715.0383, 0.20709743, 0.85116667, 0.0, 0.88911945, -7.3135595, 0.31945515, 0.3977238, 0.2844061, 0.5062929)
-            state = tuple([building for _ in range(num_buildings)])
-        super().__init__(initial_state=CityState(env, state, False, [0]), constraints=[])
+    def __init__(self):
+        super().__init__(initial_state=CityState(env, False, [0]), constraints=[])
 
     def get_applicable_actions_at_state(self, state):
         return state.get_key().get_applicable_actions()
