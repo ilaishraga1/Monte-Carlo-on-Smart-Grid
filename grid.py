@@ -11,7 +11,7 @@ schema_path = 'data/schema.json'
 num_features = 28
 num_buildings = 1
 num_values_per_feature = 5
-num_actions = 3
+num_actions = 5
 
 
 actions = np.linspace(-1, 1, num_actions)
@@ -36,16 +36,15 @@ index = 1
 
 
 class CityState:
-    def __init__(self, env, state, done, reward, depth):
+    def __init__(self, env, state, done, rewards):
         # assert len(state) == num_buildings
         # assert len(state[0]) == num_features
         global index
         self._index = index
         index += 1
         self.env = env
-        self.reward = reward
+        self.rewards = rewards
         self.done = done
-        self.depth = depth
 
         _state = []
         for s in state:
@@ -57,9 +56,7 @@ class CityState:
     def successor(self, action):
         env_copy = deepcopy(self.env)
         state, reward, done, info = env_copy.step(action)
-        reward = sum(reward)
-        average_reward = (self.reward * self.depth + reward) / (self.depth + 1)
-        return CityState(env_copy, state, done, average_reward, self.depth + 1)
+        return CityState(env_copy, state, done, self.rewards + [sum(reward)])
 
     def get_applicable_actions(self):
         # TODO return only the optional actions instead of all of them
@@ -69,16 +66,17 @@ class CityState:
         return "!"
 
     def is_done(self):
-        return self.done or (self.depth >= 5 and self.reward > -0.5)
+        return self.done or (len(self.rewards) >= 5 and np.mean(self.rewards) > -0.3)
 
     def __str__(self):
-        return f"[{self._index}|{self.depth}|{self.reward:.2f}]"
+        return f"[{self._index}|{len(self.rewards)}|{np.mean(self.rewards):.4f}]"
 
     def __repr__(self):
         return self.__str__()
 
     def __lt__(self, other):
-        return self.reward > other.reward
+        # The opposite because the rewards are negative
+        return np.mean(self.rewards) < np.mean(other.rewards)
 
 
 class CityProblem(Problem):
@@ -88,7 +86,7 @@ class CityProblem(Problem):
         else:
             building = (8.0, 1.0, 1.0, 22.456795, 24.281796, 24.544542, 22.8684, 92.53819, 70.58964, 71.346596, 85.56254, 832.66046, 936.07117, 208.70508, 347.4476, 741.96875, 235.003, 108.57185, 715.0383, 0.20709743, 0.85116667, 0.0, 0.88911945, -7.3135595, 0.31945515, 0.3977238, 0.2844061, 0.5062929)
             state = tuple([building for _ in range(num_buildings)])
-        super().__init__(initial_state=CityState(env, state, False, 0, 0), constraints=[])
+        super().__init__(initial_state=CityState(env, state, False, [0]), constraints=[])
 
     def get_applicable_actions_at_state(self, state):
         return state.get_key().get_applicable_actions()
@@ -103,7 +101,7 @@ class CityProblem(Problem):
         return [Node(State(successor, successor.is_done()), node, action, node.path_cost + cost)]
 
     def get_action_cost(self, action, state):
-        return 0  # sum([sum([c for c in b if c > 0]) for b in action])
+        return state.get_key().rewards[-1]
 
     def is_goal_state(self, state):
         return state.get_key().is_done()
@@ -115,8 +113,16 @@ class CityProblem(Problem):
         pass
 
 
+def reward_heuristic(node):
+    state = node.state.get_key()
+    return np.mean(state.rewards)
+
+
 city_gym = CityProblem()
+
+
 # result = breadth_first_search(problem=city_gym, log=True)
 # result = depth_first_search(problem=city_gym, log=True)
-result = a_star(problem=city_gym, log=True)
+# result = a_star(problem=city_gym, log=True)
 # result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
+result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
