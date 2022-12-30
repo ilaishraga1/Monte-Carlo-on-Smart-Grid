@@ -66,7 +66,7 @@ class CityState:
         return "!"
 
     def is_done(self):
-        return self.done or (len(self.rewards) >= 5 and np.mean(self.rewards) > -0.3)
+        return self.done or (len(self.rewards) >= 5 and np.mean(self.rewards) > -0.2)
 
     def __str__(self):
         return f"[{self._index}|{len(self.rewards)}|{np.mean(self.rewards):.4f}]"
@@ -92,6 +92,7 @@ class CityProblem(Problem):
         return state.get_key().get_applicable_actions()
 
     def get_applicable_actions_at_node(self, node):
+        # print("@@@@@@@@@@@@@@@@", node.get_path_cost(self)[0])
         return self.get_applicable_actions_at_state(node.state)
 
     def get_successors(self, action, node):
@@ -101,7 +102,7 @@ class CityProblem(Problem):
         return [Node(State(successor, successor.is_done()), node, action, node.path_cost + cost)]
 
     def get_action_cost(self, action, state):
-        return state.get_key().rewards[-1]
+        return abs(state.get_key().rewards[-1])
 
     def is_goal_state(self, state):
         return state.get_key().is_done()
@@ -115,7 +116,12 @@ class CityProblem(Problem):
 
 def reward_heuristic(node):
     state = node.state.get_key()
-    return np.mean(state.rewards)
+    return abs(np.mean(state.rewards))
+
+
+def astar_heuristic(node):
+    state = node.state.get_key()
+    return len(state.rewards)
 
 
 city_gym = CityProblem()
@@ -123,6 +129,9 @@ city_gym = CityProblem()
 
 # result = breadth_first_search(problem=city_gym, log=True)
 # result = depth_first_search(problem=city_gym, log=True)
+
+# result = a_star(problem=city_gym, heuristic_func=astar_heuristic, log=True)
 # result = a_star(problem=city_gym, log=True)
+
 # result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
 result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
