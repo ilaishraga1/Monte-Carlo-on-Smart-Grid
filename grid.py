@@ -6,27 +6,18 @@ from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
 
 
-schema_path = 'ai_dm/data/schema.json'
+schema_path = 'data/schema.json'
 num_features = 28
 num_buildings = 1
 num_values_per_feature = 5
 num_actions = 3
 
 
-env = CityLearnEnv(schema=schema_path)
-
-# for i in range(10):
-#     result = self.env.step([[0.001]])[0][0]
-#     print(result)
-#     print("  ".join([str(x) for x in zip(result, self.env.observation_names[0])]))
-
-# actions_box = self.env.action_space[0]
-# print(len(self.env.action_space))
-
 actions = np.linspace(-1, 1, num_actions)
 action_space = np.array(np.meshgrid(*[actions for _ in range(num_buildings)])).T.reshape(len(actions)**num_buildings, -1)
 action_space = [[(b, 0, 0, 0) for b in a] for a in action_space]
 
+env = CityLearnEnv(schema=schema_path)
 
 low, high = env.observation_space[0].low, env.observation_space[0].high
 assert low.size == num_features and high.size == num_features
@@ -43,7 +34,7 @@ for i in range(num_features):
 index = 1
 
 
-class GridState:
+class CityState:
     def __init__(self, env, state, done, reward, depth):
         # assert len(state) == num_buildings
         # assert len(state[0]) == num_features
@@ -67,7 +58,7 @@ class GridState:
         state, reward, done, info = env_copy.step(action)
         reward = sum(reward)
         average_reward = (self.reward * self.depth + reward) / (self.depth + 1)
-        return GridState(env_copy, state, done, average_reward, self.depth + 1)
+        return CityState(env_copy, state, done, average_reward, self.depth + 1)
 
     def get_applicable_actions(self):
         # TODO return only the optional actions instead of all of them
@@ -86,18 +77,22 @@ class GridState:
         return self.__str__()
 
 
-class CityGym(Problem):
+class CityProblem(Problem):
     def __init__(self):
         state = tuple([tuple(env.observation_space[0].sample()) for _ in range(num_buildings)])
-        super().__init__(initial_state=GridState(env, state, False, 0, 0), constraints=[])
+        super().__init__(initial_state=CityState(env, state, False, 0, 0), constraints=[])
 
-    def get_applicable_actions(self, node):
-        return node.state.get_key().get_applicable_actions()
+    def get_applicable_actions_at_state(self, state):
+        return state.get_key().get_applicable_actions()
+
+    def get_applicable_actions_at_node(self, node):
+        return self.get_applicable_actions_at_state(node.state)
 
     def get_successors(self, action, node):
         # The cost is only when charging the battery  TODO check
         cost = self.get_action_cost(action, node.state)
-        return [Node(State(node.state.get_key().successor(action)), node, action, node.path_cost + cost)]
+        successor = node.state.get_key().successor(action)
+        return [Node(State(successor, successor.is_done()), node, action, node.path_cost + cost)]
 
     def get_action_cost(self, action, state):
         return 0  # sum([sum([c for c in b if c > 0]) for b in action])
@@ -109,5 +104,5 @@ class CityGym(Problem):
         pass
 
 
-city_gym = CityGym()
+city_gym = CityProblem()
 best_value, best_node, best_plan, explored_count, ex_terminated = breadth_first_search(problem=city_gym, log=True)
