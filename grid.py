@@ -5,6 +5,7 @@ from ai_dm.Search.best_first_search import breadth_first_search, a_star, depth_f
 from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
 from mc_heuristic import heuristic_montecarlo
+from mcts import mcts, default_selection_policy, default_expansion_policy, default_rollout_policy
 
 
 schema_path = 'data/schema.json'
@@ -79,17 +80,20 @@ class CityState:
         return "!"
 
     def is_done(self):
-        return self.done or (len(self.rewards) >= 5 and np.mean(self.rewards) > -0.2)
+        return self.done or (len(self.rewards) >= 5 and self.result() > -0.2)
+
+    def result(self):
+        return np.mean(self.rewards)
 
     def __str__(self):
-        return f"[{self._index}|{len(self.rewards)}|{np.mean(self.rewards):.4f}]"
+        return f"[{self._index}|{len(self.rewards)}|{self.result():.4f}]"
 
     def __repr__(self):
         return self.__str__()
 
     def __lt__(self, other):
         # The opposite because the rewards are negative
-        return np.mean(self.rewards) < np.mean(other.rewards)
+        return self.result() < other.result()
 
 
 class CityProblem(Problem):
@@ -124,7 +128,7 @@ class CityProblem(Problem):
 
 def reward_heuristic(node):
     state = node.state.get_key()
-    return abs(np.mean(state.rewards))
+    return abs(state.result())
 
 
 def astar_heuristic(node):
@@ -142,4 +146,6 @@ city_gym = CityProblem()
 # result = a_star(problem=city_gym, log=True)
 
 # result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
-result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
+# result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
+
+mcts(city_gym, 100, default_selection_policy, default_expansion_policy, default_rollout_policy)
