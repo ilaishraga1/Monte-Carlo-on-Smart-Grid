@@ -1,9 +1,10 @@
 from copy import deepcopy
 import numpy as np
 from citylearn.citylearn import CityLearnEnv
-from ai_dm.Search.best_first_search import breadth_first_search
+from ai_dm.Search.best_first_search import breadth_first_search, a_star, depth_first_search, greedy_best_first_search
 from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
+from mc_heuristic import heuristic_montecarlo
 
 
 schema_path = 'data/schema.json'
@@ -71,15 +72,22 @@ class CityState:
         return self.done or (self.depth >= 5 and self.reward > -0.5)
 
     def __str__(self):
-        return f" [{self._index}|{self.depth}|{self.reward:.2f}] "
+        return f"[{self._index}|{self.depth}|{self.reward:.2f}]"
 
     def __repr__(self):
         return self.__str__()
 
+    def __lt__(self, other):
+        return self.reward > other.reward
+
 
 class CityProblem(Problem):
-    def __init__(self):
-        state = tuple([tuple(env.observation_space[0].sample()) for _ in range(num_buildings)])
+    def __init__(self, random_start=False):
+        if random_start:
+            state = tuple([tuple(env.observation_space[0].sample()) for _ in range(num_buildings)])
+        else:
+            building = (8.0, 1.0, 1.0, 22.456795, 24.281796, 24.544542, 22.8684, 92.53819, 70.58964, 71.346596, 85.56254, 832.66046, 936.07117, 208.70508, 347.4476, 741.96875, 235.003, 108.57185, 715.0383, 0.20709743, 0.85116667, 0.0, 0.88911945, -7.3135595, 0.31945515, 0.3977238, 0.2844061, 0.5062929)
+            state = tuple([building for _ in range(num_buildings)])
         super().__init__(initial_state=CityState(env, state, False, 0, 0), constraints=[])
 
     def get_applicable_actions_at_state(self, state):
@@ -103,6 +111,12 @@ class CityProblem(Problem):
     def apply_action(self, action):
         pass
 
+    def reset_env(self):
+        pass
+
 
 city_gym = CityProblem()
-best_value, best_node, best_plan, explored_count, ex_terminated = breadth_first_search(problem=city_gym, log=True)
+# result = breadth_first_search(problem=city_gym, log=True)
+# result = depth_first_search(problem=city_gym, log=True)
+result = a_star(problem=city_gym, log=True)
+# result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
