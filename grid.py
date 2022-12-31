@@ -136,8 +136,8 @@ city_gym = CityProblem()
 # result = a_star(problem=city_gym, log=True)
 
 # result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
-result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
+# result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
 
-# result = mcts(city_gym, 1000)
+result = mcts(city_gym, 1000)
 
 print(result)

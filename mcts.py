@@ -10,12 +10,12 @@ def default_selection_policy(node):
     # index = np.argmax([np.max(c._results) for c in node.children])
     # return node.children[index]
 
-    child = node.children[np.random.randint(len(node.children))]
-    return child
+    # child = node.children[np.random.randint(len(node.children))]
+    # return child
 
-    # probabilities = [np.max(x._results) + 1 for x in node.children]
-    # probabilities = [x / sum(probabilities) for x in probabilities]
-    # return np.random.choice(node.children, p=probabilities)
+    probabilities = [np.max(x._results) + 1 for x in node.children]
+    probabilities = [x / sum(probabilities) for x in probabilities]
+    return np.random.choice(node.children, p=probabilities)
 
 
 def default_expansion_policy(node):
