@@ -24,12 +24,12 @@ def montecarlo_aux(state, left_steps):
     rewards = 0
     for action in random.sample(actions, checked):
         neighbor = state.successor(action)
-        rewards += neighbor.reward + montecarlo_aux(neighbor, left_steps - 1)
+        rewards += neighbor.rewards[-1] + montecarlo_aux(neighbor, left_steps - 1)
 
     return rewards / checked
 
 
 def heuristic_montecarlo(node):
     state = node.state.get_key()
-    reward = state.reward + montecarlo_aux(state, STEPS)
+    reward = state.rewards[-1] + montecarlo_aux(state, STEPS)
     return -reward

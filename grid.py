@@ -5,7 +5,7 @@ from ai_dm.Search.best_first_search import breadth_first_search, a_star, depth_f
 from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
 from mc_heuristic import heuristic_montecarlo
-from mcts import mcts, default_selection_policy, default_expansion_policy, default_rollout_policy
+from mcts import mcts
 
 
 schema_path = 'data/schema.json'
@@ -69,11 +69,9 @@ class CityState:
                 aa = f"_Building__{a[:-4]}"
                 values = np.linspace(0, building.__dict__[aa].capacity, soc_num_values)
                 building.__dict__[aa].soc[-1] = min(values, key=lambda v: abs(v - building.__dict__[aa].soc[-1]))
-                # print(building.__dict__[f"_Building__{a[:-4]}"].soc)
         return CityState(env, done, self.rewards + [sum(reward)])
 
     def get_applicable_actions(self):
-        # TODO return only the optional actions instead of all of them
         return action_space
 
     def get_transition_path_string(self):
@@ -101,14 +99,12 @@ class CityProblem(Problem):
         super().__init__(initial_state=CityState(env, False, [0]), constraints=[])
 
     def get_applicable_actions_at_state(self, state):
-        return state.get_key().get_applicable_actions()
+        return state.get_key().get_applicable_actions()[:]
 
     def get_applicable_actions_at_node(self, node):
-        # print("@@@@@@@@@@@@@@@@", node.get_path_cost(self)[0])
-        return self.get_applicable_actions_at_state(node.state)
+        return self.get_applicable_actions_at_state(node.state)[:]
 
     def get_successors(self, action, node):
-        # The cost is only when charging the battery  TODO check
         cost = self.get_action_cost(action, node.state)
         successor = node.state.get_key().successor(action)
         return [Node(State(successor, successor.is_done()), node, action, node.path_cost + cost)]
@@ -131,21 +127,17 @@ def reward_heuristic(node):
     return abs(state.result())
 
 
-def astar_heuristic(node):
-    state = node.state.get_key()
-    return len(state.rewards)
-
-
 city_gym = CityProblem()
 
 
 # result = breadth_first_search(problem=city_gym, log=True)
 # result = depth_first_search(problem=city_gym, log=True)
 
-# result = a_star(problem=city_gym, heuristic_func=astar_heuristic, log=True)
 # result = a_star(problem=city_gym, log=True)
 
 # result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
-# result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
+result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
 
-mcts(city_gym, 100, default_selection_policy, default_expansion_policy, default_rollout_policy)
+# result = mcts(city_gym, 1000)
+
+print(result)
