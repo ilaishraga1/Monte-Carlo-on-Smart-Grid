@@ -10,7 +10,7 @@ class Infrastructure:
 
     min_steps_to_finish = 5
     min_result_to_finish = -0.1
-    max_states = 1000
+    max_states = 10000
 
     num_actions = 5
     num_features = 28
@@ -80,7 +80,8 @@ class CityState:
         env = deepcopy(self.env)
         state, reward, done, info = env.step(action)
         for building in env.buildings:
-            features = [f for f in ["cooling_storage_soc", "heating_storage_soc", "dhw_storage_soc", "electrical_storage_soc"] if f in building.active_observations]
+            features = [f for f in ["cooling_storage_soc", "heating_storage_soc", "dhw_storage_soc", "electrical_storage_soc"]
+                        if f in building.active_observations]
             for a in features:
                 aa = f"_Building__{a[:-4]}"
                 values = np.linspace(0, building.__dict__[aa].capacity, self.problem.infrastructure.soc_num_values)
@@ -91,7 +92,7 @@ class CityState:
         return self.problem.infrastructure.action_space
 
     def get_transition_path_string(self):
-        return "!"
+        return ""
 
     def is_done(self):
         return self.done or \
