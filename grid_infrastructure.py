@@ -23,7 +23,7 @@ class Infrastructure:
         self.env.buildings = [self.env.buildings[i] for i in building_indices]
         self.num_buildings = len(building_indices)
         self.discovered_states = 0
-        self.best_result = -np.inf
+        self.best_result = []
         self.deepest_depth = 0
 
         # Init the action space
@@ -55,6 +55,18 @@ class Infrastructure:
                     for i in range(arr.size):
                         arr[i] = min(features_values[x], key=lambda v: abs(v - arr[i]))
 
+    def update_data(self, state):
+        self.discovered_states += 1
+
+        if len(state.rewards) >= self.min_steps_to_finish and \
+                (self.best_result == [] or state.result() > self.best_result[-1][1]):
+            self.best_result.append((self.discovered_states, state.result()))
+
+        if len(state.rewards) > self.deepest_depth:
+            self.deepest_depth = len(state.rewards)
+
+        return self.discovered_states
+
 
 class CityState:
     def __init__(self, problem, env, done, rewards):
@@ -62,16 +74,7 @@ class CityState:
         self.env = env
         self.rewards = rewards
         self.done = done
-
-        self.index = problem.infrastructure.discovered_states
-        problem.infrastructure.discovered_states += 1
-
-        if len(self.rewards) >= self.problem.infrastructure.min_steps_to_finish and \
-                self.result() > problem.infrastructure.best_result:
-            problem.infrastructure.best_result = self.result()
-
-        if len(self.rewards) > problem.infrastructure.deepest_depth:
-            problem.infrastructure.deepest_depth = len(self.rewards)
+        self.index = problem.infrastructure.update_data(self)
 
     def successor(self, action):
         env = deepcopy(self.env)

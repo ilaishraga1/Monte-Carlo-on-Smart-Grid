@@ -16,7 +16,7 @@ class Algorithms(Enum):
 
 
 def run(algorithm, building_indices=(0,), log=False):
-    print(algorithm.name)
+    print(algorithm.name, building_indices)
 
     problem = CityProblem(building_indices)
 
