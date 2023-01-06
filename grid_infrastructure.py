@@ -5,54 +5,56 @@ from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
 
 
-schema_path = 'data/schema.json'
-num_features = 28
-num_buildings = 1
-feature_num_values = 5
-soc_num_values = 10
-num_actions = 5
+class Infrastructure:
+    schema_path = 'data/schema.json'
+    num_buildings = 1
+    num_actions = 5
+    num_features = 28
+    feature_num_values = 5
+    soc_num_values = 10
 
+    def __init__(self):
+        # Init the CityLearn environment
+        self.env = CityLearnEnv(schema=self.schema_path)
+        self.discovered_states = 0
 
-actions = np.linspace(-1, 1, num_actions)
-action_space = np.array(np.meshgrid(*[actions for _ in range(num_buildings)])).T.reshape(len(actions)**num_buildings, -1)
-action_space = [[(b, 0, 0, 0) for b in a] for a in action_space]
+        # Init the action space
+        actions = np.linspace(-1, 1, self.num_actions)
+        action_space = np.array(np.meshgrid(
+            *[actions for _ in range(self.num_buildings)])).T.reshape(len(actions)**self.num_buildings, -1)
+        self.action_space = [[(b, 0, 0, 0) for b in a] for a in action_space]
 
+        # Init the states space values
+        names = self.env.observation_names[0]
+        low, high = self.env.observation_space[0].low, self.env.observation_space[0].high
+        assert low.size == self.num_features and high.size == self.num_features and len(names) == self.num_features
+        discrete_features_indices = [0, 1, 2]
+        features_values = {}
+        for i in range(self.num_features):
+            n = self.feature_num_values
+            if i in discrete_features_indices:
+                n = round(high[i] - low[i] + 1)
+            features_values[names[i]] = np.linspace(low[i], high[i], n)
 
-env = CityLearnEnv(schema=schema_path)
-
-
-names, low, high = env.observation_names[0], env.observation_space[0].low, env.observation_space[0].high
-assert low.size == num_features and high.size == num_features and len(names) == num_features
-discrete_features_indices = [0, 1, 2]
-features_values = {}
-for i in range(num_features):
-    n = feature_num_values
-    if i in discrete_features_indices:
-        n = round(high[i] - low[i] + 1)
-    features_values[names[i]] = np.linspace(low[i], high[i], n)
-
-
-for building in env.buildings:
-    features = ["energy_simulation", "weather", "pricing", "carbon_intensity"]
-    for a in features:
-        a = building.__dict__[f"_Building__{a}"]
-        fields = [x for x in vars(a).keys() if x in building.active_observations]
-        for x in fields:
-            arr = a.__dict__[x]
-            for i in range(arr.size):
-                arr[i] = min(features_values[x], key=lambda v: abs(v - arr[i]))
-
-
-index = 1
+        # Round the states to the states space values
+        for building in self.env.buildings:
+            features = ["energy_simulation", "weather", "pricing", "carbon_intensity"]
+            for a in features:
+                a = building.__dict__[f"_Building__{a}"]
+                fields = [x for x in vars(a).keys() if x in building.active_observations]
+                for x in fields:
+                    arr = a.__dict__[x]
+                    for i in range(arr.size):
+                        arr[i] = min(features_values[x], key=lambda v: abs(v - arr[i]))
 
 
 class CityState:
-    def __init__(self, env, done, rewards):
+    def __init__(self, problem, env, done, rewards):
         # assert len(state) == num_buildings
         # assert len(state[0]) == num_features
-        global index
-        self._index = index
-        index += 1
+        self.problem = problem
+        self.index = problem.infrastructure.discovered_states
+        problem.infrastructure.discovered_states += 1
         self.env = env
         self.rewards = rewards
         self.done = done
@@ -64,12 +66,12 @@ class CityState:
             features = [f for f in ["cooling_storage_soc", "heating_storage_soc", "dhw_storage_soc", "electrical_storage_soc"] if f in building.active_observations]
             for a in features:
                 aa = f"_Building__{a[:-4]}"
-                values = np.linspace(0, building.__dict__[aa].capacity, soc_num_values)
+                values = np.linspace(0, building.__dict__[aa].capacity, self.problem.infrastructure.soc_num_values)
                 building.__dict__[aa].soc[-1] = min(values, key=lambda v: abs(v - building.__dict__[aa].soc[-1]))
-        return CityState(env, done, self.rewards + [sum(reward)])
+        return CityState(self.problem, env, done, self.rewards + [sum(reward)])
 
     def get_applicable_actions(self):
-        return action_space
+        return self.problem.infrastructure.action_space
 
     def get_transition_path_string(self):
         return "!"
@@ -81,7 +83,7 @@ class CityState:
         return np.mean(self.rewards)
 
     def __str__(self):
-        return f"[{self._index}|{len(self.rewards)}|{self.result():.4f}]"
+        return f"[{self.index}|{len(self.rewards)}|{self.result():.4f}]"
 
     def __repr__(self):
         return self.__str__()
@@ -93,7 +95,9 @@ class CityState:
 
 class CityProblem(Problem):
     def __init__(self):
-        super().__init__(initial_state=CityState(env, False, [0]), constraints=[])
+        self.infrastructure = Infrastructure()
+        initial_state = CityState(self, self.infrastructure.env, False, [0])
+        super().__init__(initial_state=initial_state, constraints=[])
 
     def get_applicable_actions_at_state(self, state):
         return state.get_key().get_applicable_actions()[:]
