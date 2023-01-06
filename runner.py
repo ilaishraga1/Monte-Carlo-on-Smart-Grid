@@ -15,15 +15,15 @@ class Algorithms(Enum):
     BFS_Reward = "BestFirstSearch_RewardHeuristic"
 
 
-def run(algorithm, log=False):
+def run(algorithm, building_indices=(0,), log=False):
     print(algorithm.name)
 
-    problem = CityProblem()
+    problem = CityProblem(building_indices)
 
     if algorithm == Algorithms.BFS:
         breadth_first_search(problem=problem, log=log)
     elif algorithm == Algorithms.DFS:
-        depth_first_search_l(problem=problem, max_depth=6, log=log)
+        depth_first_search_l(problem=problem, max_depth=7, log=log)
     elif algorithm == Algorithms.A_star:
         a_star(problem=problem, log=log)
     elif algorithm == Algorithms.BFS_MC:

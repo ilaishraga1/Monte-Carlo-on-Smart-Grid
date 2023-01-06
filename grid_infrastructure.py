@@ -7,17 +7,21 @@ from ai_dm.Search.utils import State, Node
 
 class Infrastructure:
     schema_path = 'data/schema.json'
+
     min_steps_to_finish = 5
-    min_result_to_finish = -0.2
-    num_buildings = 1
+    min_result_to_finish = -0.1
+    max_states = 1000
+
     num_actions = 5
     num_features = 28
     feature_num_values = 5
     soc_num_values = 10
 
-    def __init__(self):
+    def __init__(self, building_indices):
         # Init the CityLearn environment
         self.env = CityLearnEnv(schema=self.schema_path)
+        self.env.buildings = [self.env.buildings[i] for i in building_indices]
+        self.num_buildings = len(building_indices)
         self.discovered_states = 0
         self.best_result = -np.inf
         self.deepest_depth = 0
@@ -54,8 +58,6 @@ class Infrastructure:
 
 class CityState:
     def __init__(self, problem, env, done, rewards):
-        # assert len(state) == num_buildings
-        # assert len(state[0]) == num_features
         self.problem = problem
         self.env = env
         self.rewards = rewards
@@ -90,7 +92,8 @@ class CityState:
 
     def is_done(self):
         return self.done or \
-               (len(self.rewards) >= self.problem.infrastructure.min_steps_to_finish and
+            self.problem.infrastructure.discovered_states >= self.problem.infrastructure.max_states or \
+            (len(self.rewards) >= self.problem.infrastructure.min_steps_to_finish and
                 self.result() > self.problem.infrastructure.min_result_to_finish)
 
     def result(self):
@@ -108,8 +111,8 @@ class CityState:
 
 
 class CityProblem(Problem):
-    def __init__(self):
-        self.infrastructure = Infrastructure()
+    def __init__(self, building_indices):
+        self.infrastructure = Infrastructure(building_indices)
         initial_state = CityState(self, self.infrastructure.env, False, [0])
         super().__init__(initial_state=initial_state, constraints=[])
 
