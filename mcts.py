@@ -52,7 +52,7 @@ class MCTSNode(utils.Node):
 
 
 def mcts(problem, comp_resources, selection_policy=default_selection_policy,
-         expansion_policy=default_expansion_policy, rollout_policy=default_rollout_policy):
+         expansion_policy=default_expansion_policy, rollout_policy=default_rollout_policy, log=False):
     # initialize the search tree
     root_node = MCTSNode(problem, problem.get_current_state())
 
@@ -67,8 +67,8 @@ def mcts(problem, comp_resources, selection_policy=default_selection_policy,
         # update the tree with the current values
         expanded_child.backpropagate(simulation_result)
 
-        if i % 50 == 0:
-            print(max(root_node._results))
+        if log and i % 50 == 0:
+            print(i, max(root_node._results))
 
     return max(root_node._results)
 

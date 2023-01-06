@@ -20,8 +20,8 @@ class Infrastructure:
 
         # Init the action space
         actions = np.linspace(-1, 1, self.num_actions)
-        action_space = np.array(np.meshgrid(
-            *[actions for _ in range(self.num_buildings)])).T.reshape(len(actions)**self.num_buildings, -1)
+        action_space = np.array(np.meshgrid(*[actions for _ in range(self.num_buildings)]))\
+            .T.reshape(len(actions)**self.num_buildings, -1)
         self.action_space = [[(b, 0, 0, 0) for b in a] for a in action_space]
 
         # Init the states space values
