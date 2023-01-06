@@ -1,11 +1,8 @@
 from copy import deepcopy
 import numpy as np
 from citylearn.citylearn import CityLearnEnv
-from ai_dm.Search.best_first_search import breadth_first_search, a_star, depth_first_search, greedy_best_first_search
 from ai_dm.base.problem import Problem
 from ai_dm.Search.utils import State, Node
-from mc_heuristic import heuristic_montecarlo
-from mcts import mcts
 
 
 schema_path = 'data/schema.json'
@@ -125,19 +122,3 @@ class CityProblem(Problem):
 def reward_heuristic(node):
     state = node.state.get_key()
     return abs(state.result())
-
-
-city_gym = CityProblem()
-
-
-# result = breadth_first_search(problem=city_gym, log=True)
-# result = depth_first_search(problem=city_gym, log=True)
-
-# result = a_star(problem=city_gym, log=True)
-
-# result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=True)
-# result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=True)
-
-result = mcts(city_gym, 1000)
-
-print(result)
