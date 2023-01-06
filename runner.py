@@ -1,5 +1,6 @@
 from enum import Enum
-from ai_dm.Search.best_first_search import breadth_first_search, a_star, depth_first_search, greedy_best_first_search
+from ai_dm.Search.best_first_search import breadth_first_search, a_star, \
+    greedy_best_first_search, depth_first_search_l
 from mc_heuristic import heuristic_montecarlo
 from mcts import mcts
 from grid_infrastructure import CityProblem, reward_heuristic
@@ -17,33 +18,28 @@ class Algorithms(Enum):
 def run(algorithm, log=False):
     print(algorithm.name)
 
-    city_gym = CityProblem()
+    problem = CityProblem()
 
     if algorithm == Algorithms.BFS:
-        result = breadth_first_search(problem=city_gym, log=log)
+        breadth_first_search(problem=problem, log=log)
     elif algorithm == Algorithms.DFS:
-        result = depth_first_search(problem=city_gym, log=log)
+        depth_first_search_l(problem=problem, max_depth=6, log=log)
     elif algorithm == Algorithms.A_star:
-        result = a_star(problem=city_gym, log=log)
+        a_star(problem=problem, log=log)
     elif algorithm == Algorithms.BFS_MC:
-        result = greedy_best_first_search(problem=city_gym, heuristic_func=heuristic_montecarlo, log=log)
+        greedy_best_first_search(problem=problem, heuristic_func=heuristic_montecarlo, log=log)
     elif algorithm == Algorithms.MCTS:
-        result = mcts(city_gym, 1000, log=log)
+        mcts(problem, 1000, log=log)
     elif algorithm == Algorithms.BFS_Reward:
-        result = greedy_best_first_search(problem=city_gym, heuristic_func=reward_heuristic, log=log)
+        greedy_best_first_search(problem=problem, heuristic_func=reward_heuristic, log=log)
     else:
         assert False, "Invalid algorithm"
 
+    result = problem.infrastructure.best_result, problem.infrastructure.discovered_states, \
+             problem.infrastructure.deepest_depth
     print(result)
     return result
 
 
-def tester(num=5):
-    for algorithm in Algorithms:
-        for i in range(num):
-            run(algorithm)
-
-
 if __name__ == "__main__":
-    # tester(5)
-    run(Algorithms.MCTS)
+    run(Algorithms.DFS, log=False)

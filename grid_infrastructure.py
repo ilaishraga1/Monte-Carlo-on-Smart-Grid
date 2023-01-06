@@ -7,6 +7,8 @@ from ai_dm.Search.utils import State, Node
 
 class Infrastructure:
     schema_path = 'data/schema.json'
+    min_steps_to_finish = 5
+    min_result_to_finish = -0.2
     num_buildings = 1
     num_actions = 5
     num_features = 28
@@ -17,6 +19,8 @@ class Infrastructure:
         # Init the CityLearn environment
         self.env = CityLearnEnv(schema=self.schema_path)
         self.discovered_states = 0
+        self.best_result = -np.inf
+        self.deepest_depth = 0
 
         # Init the action space
         actions = np.linspace(-1, 1, self.num_actions)
@@ -53,11 +57,19 @@ class CityState:
         # assert len(state) == num_buildings
         # assert len(state[0]) == num_features
         self.problem = problem
-        self.index = problem.infrastructure.discovered_states
-        problem.infrastructure.discovered_states += 1
         self.env = env
         self.rewards = rewards
         self.done = done
+
+        self.index = problem.infrastructure.discovered_states
+        problem.infrastructure.discovered_states += 1
+
+        if len(self.rewards) >= self.problem.infrastructure.min_steps_to_finish and \
+                self.result() > problem.infrastructure.best_result:
+            problem.infrastructure.best_result = self.result()
+
+        if len(self.rewards) > problem.infrastructure.deepest_depth:
+            problem.infrastructure.deepest_depth = len(self.rewards)
 
     def successor(self, action):
         env = deepcopy(self.env)
@@ -77,7 +89,9 @@ class CityState:
         return "!"
 
     def is_done(self):
-        return self.done or (len(self.rewards) >= 5 and self.result() > -0.2)
+        return self.done or \
+               (len(self.rewards) >= self.problem.infrastructure.min_steps_to_finish and
+                self.result() > self.problem.infrastructure.min_result_to_finish)
 
     def result(self):
         return np.mean(self.rewards)
