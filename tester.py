@@ -26,7 +26,7 @@ def tester(num=5):
     return results
 
 
-def analyze():
+def analyze(building=3):
     results = []
     with open(RESULTS_FILE, "r") as f:
         for i, line in enumerate(f):
@@ -36,7 +36,7 @@ def analyze():
             a[-1] = json.loads(a[-1].replace(';', ',').replace('(', '[').replace(')', ']'))
             results.append([a[0], int(a[1]), float(a[2]), int(a[3]), int(a[4]), a[5]])
 
-    results_building = [line for line in results if line[1] == 0]
+    results_building = [line for line in results if line[1] == building]
     for i in range(len(results_building)):
         points_x = [a[0] for a in results_building[i][-1]]
         points_y = [a[2] for a in results_building[i][-1]]
@@ -47,7 +47,7 @@ def analyze():
     plt.title("Best reward as a functions of the discovered states")
     plt.show()
 
-    results_building = [line for line in results if line[1] == 0]
+    results_building = [line for line in results if line[1] == building]
     for i in range(len(results_building)):
         points_x = [a[1] for a in results_building[i][-1]]
         points_y = [a[2] for a in results_building[i][-1]]
