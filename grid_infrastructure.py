@@ -10,7 +10,7 @@ class Infrastructure:
 
     min_steps_to_finish = 5
     min_result_to_finish = 0
-    max_states = 1000
+    max_states = 10000
 
     num_actions = 5
     num_features = 28
