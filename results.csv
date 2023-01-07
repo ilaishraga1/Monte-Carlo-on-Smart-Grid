@@ -1,0 +1,5 @@
+algorithm,building,time,discovered_states,deepest_depth,rewards
+Algorithms.BFS,0,<module 'time' (built-in)>,[],101,4
+Algorithms.DFS,0,<module 'time' (built-in)>,[(17, 5, -0.6582475855344944)],101,9
+Algorithms.A_star,0,<module 'time' (built-in)>,[(67, 5, -0.17069951818799375)],101,5
+Algorithms.BFS_MC,0,<module 'time' (built-in)>,[(23, 5, -0.17069951818799375)],165,6

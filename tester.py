@@ -7,22 +7,23 @@ import matplotlib.pyplot as plt
 RESULTS_FILE = "results.csv"
 
 
-# def test():
-#     with open(RESULTS_FILE, "w") as f:
-#         f.write("heuristic,n,steps,reward,developed\n")
-#
-#     reward, developed = main(heuristics.heuristic_bfs)
-#     with open(RESULTS_FILE, "a") as f:
-#         f.write(f"bfs,{0},{0},{reward},{developed}\n")
-#
-#     for n in range(1, 8):
-#         for steps in range(1, 9):
-#             for _ in range(10):
-#                 print(n, steps)
-#                 heuristics.set_parameters(n, steps)
-#                 reward, developed = main(heuristics.heuristic_montecarlo)
-#                 with open(RESULTS_FILE, "a") as f:
-#                     f.write(f"montecarlo,{n},{steps},{reward},{developed}\n")
+def tester(num=5):
+    with open(RESULTS_FILE, "w") as f:
+        f.write("algorithm,building,time,discovered_states,deepest_depth,rewards\n")
+
+    results = []
+    for algorithm in Algorithms:
+        for i in range(num):
+            start = time.time()
+            result = run(algorithm, building_indices=(i,))
+            end = time.time()
+            print(end - start, "sec")
+            results.append((algorithm, i, end - start, result[0], result[1], result[2]))
+            with open(RESULTS_FILE, "a") as f:
+                f.write(f"{algorithm},{i},{time},{result[0]},{result[1]},{str(result[2]).replace(',', ';')}\n")
+
+    print(results)
+    return results
 
 
 def analyze():
@@ -71,19 +72,10 @@ def analyze():
     plt.show()
 
 
-def tester(num=5):
-    results = []
-    for algorithm in Algorithms:
-        for i in range(num):
-            start = time.time()
-            result = run(algorithm, building_indices=(i,))
-            end = time.time()
-            print(end - start, "sec")
-            results.append((algorithm, result, end - start))
+def plot(results):
+    chosen_buildings = [1]
 
-    print(results)
-    return results
 
 
 if __name__ == "__main__":
-    tester()
+    tester(1)
