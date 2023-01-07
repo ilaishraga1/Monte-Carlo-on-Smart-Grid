@@ -7,19 +7,19 @@ def default_rollout_policy(possible_moves):
 
 
 def default_selection_policy(node):
-    # index = np.argmax([np.max(c._results) for c in node.children])
+    # index = np.argmax([np.max(c.results) for c in node.children])
     # return node.children[index]
 
     # child = node.children[np.random.randint(len(node.children))]
     # return child
 
-    probabilities = [np.max(x._results) + 1 for x in node.children]
+    probabilities = [np.max(x.results) + 1 for x in node.children]
     probabilities = [x / sum(probabilities) for x in probabilities]
     return np.random.choice(node.children, p=probabilities)
 
 
 def default_expansion_policy(node):
-    action = node._untried_actions[np.random.randint(len(node._untried_actions))]
+    action = node.untried_actions[np.random.randint(len(node.untried_actions))]
     return action
 
 
@@ -28,16 +28,16 @@ class MCTSNode(utils.Node):
         super().__init__(state, parent, action, path_cost, info)
         self.problem = problem
         self.children = []
-        self._number_of_visits = 0
-        self._results = []
-        self._untried_actions = problem.get_applicable_actions_at_state(state)
+        self.number_of_visits = 0
+        self.results = []
+        self.untried_actions = problem.get_applicable_actions_at_state(state)
 
     def is_leaf(self):
-        return self._untried_actions != []
+        return self.untried_actions != []
 
     def expand(self, policy):
         action = policy(self)
-        self._untried_actions.remove(action)
+        self.untried_actions.remove(action)
         next_state = self.state.get_key().successor(action)
         next_state = utils.State(next_state, next_state.is_done())
         child_node = MCTSNode(self.problem, next_state, parent=self, action=action)
@@ -45,8 +45,8 @@ class MCTSNode(utils.Node):
         return child_node
 
     def backpropagate(self, result):
-        self._number_of_visits += 1.
-        self._results.append(result)
+        self.number_of_visits += 1.
+        self.results.append(result)
         if self.parent:
             self.parent.backpropagate(result)
 
@@ -68,9 +68,9 @@ def mcts(problem, comp_resources, selection_policy=default_selection_policy,
         expanded_child.backpropagate(simulation_result)
 
         if log and i % 50 == 0:
-            print(i, max(root_node._results))
+            print(i, max(root_node.results))
 
-    return max(root_node._results)
+    return max(root_node.results)
 
 
 # recursively traverse the tree until a leaf node (of the current MCTS tree) is reached.

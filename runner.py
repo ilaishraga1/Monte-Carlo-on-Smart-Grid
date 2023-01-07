@@ -42,4 +42,4 @@ def run(algorithm, building_indices=(0,), log=False):
 
 
 if __name__ == "__main__":
-    run(Algorithms.DFS, log=False)
+    run(Algorithms.MCTS, log=True)

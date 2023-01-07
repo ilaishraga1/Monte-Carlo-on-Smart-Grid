@@ -9,8 +9,8 @@ class Infrastructure:
     schema_path = 'data/schema.json'
 
     min_steps_to_finish = 5
-    min_result_to_finish = -0.01
-    max_states = 100000
+    min_result_to_finish = 0
+    max_states = 20000
 
     num_actions = 5
     num_features = 28
