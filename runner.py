@@ -35,8 +35,8 @@ def run(algorithm, building_indices=(0,), log=False):
     else:
         assert False, "Invalid algorithm"
 
-    result = problem.infrastructure.best_result, problem.infrastructure.discovered_states, \
-             problem.infrastructure.deepest_depth
+    result = problem.infrastructure.discovered_states, problem.infrastructure.deepest_depth, \
+             problem.infrastructure.best_result
     print(result)
     return result
 

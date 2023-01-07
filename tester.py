@@ -1,7 +1,8 @@
 import time
-from runner import Algorithms, run
+import json
 import numpy as np
 import matplotlib.pyplot as plt
+from runner import Algorithms, run
 
 
 RESULTS_FILE = "results.csv"
@@ -18,9 +19,9 @@ def tester(num=5):
             result = run(algorithm, building_indices=(i,))
             end = time.time()
             print(end - start, "sec")
-            results.append((algorithm, i, end - start, result[0], result[1], result[2]))
+            results.append((algorithm.name, i, end - start, result[0], result[1], result[2]))
             with open(RESULTS_FILE, "a") as f:
-                f.write(f"{algorithm},{i},{time},{result[0]},{result[1]},{str(result[2]).replace(',', ';')}\n")
+                f.write(f"{algorithm.name},{i},{end - start},{result[0]},{result[1]},{str(result[2]).replace(',', ';')}\n")
 
     print(results)
     return results
@@ -30,11 +31,23 @@ def analyze():
     results = []
     with open(RESULTS_FILE, "r") as f:
         for i, line in enumerate(f):
-            a = line.split(',')
-            if i == 0 or a[0] != "montecarlo":
+            if i == 0:
                 continue
-            results.append([int(a[1]), int(a[2]), int(a[3]), int(a[4])])
+            a = line[:-1].split(',')
+            a[-1] = json.loads(a[-1].replace(';', ',').replace('(', '[').replace(')', ']'))
+            results.append([a[0], int(a[1]), float(a[2]), int(a[3]), int(a[4]), a[5]])
 
+    results_building_0 = [line for line in results if line[1] == 0]
+    for i in range(len(results_building_0)):
+        points_x = [a[0] for a in results_building_0[i][-1]]
+        points_y = [a[2] for a in results_building_0[i][-1]]
+        plt.plot(points_x, points_y, label=results_building_0[i][0])
+    plt.legend()
+    plt.xlabel("Discovered states")
+    plt.ylabel("Reward")
+    plt.show()
+
+    '''
     results = np.array(results)
 
     x = np.unique(results[:, 0])
@@ -70,12 +83,9 @@ def analyze():
     ax2.legend(lines1 + lines2, labels1 + labels2)
     plt.savefig("graphSteps.png")
     plt.show()
-
-
-def plot(results):
-    chosen_buildings = [1]
-
+    '''
 
 
 if __name__ == "__main__":
-    tester(1)
+    # tester(1)
+    analyze()

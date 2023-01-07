@@ -10,7 +10,7 @@ class Infrastructure:
 
     min_steps_to_finish = 5
     min_result_to_finish = 0
-    max_states = 100
+    max_states = 1000
 
     num_actions = 5
     num_features = 28
@@ -62,7 +62,7 @@ class Infrastructure:
             self.deepest_depth = len(state.rewards)
 
         if len(state.rewards) >= self.min_steps_to_finish and \
-                (self.best_result == [] or state.result() > self.best_result[-1][1]):
+                (self.best_result == [] or state.result() > self.best_result[-1][2]):
             self.best_result.append((self.discovered_states, self.deepest_depth, state.result()))
 
         return self.discovered_states

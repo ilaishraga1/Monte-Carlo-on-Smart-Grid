@@ -16,7 +16,6 @@ def default_selection_policy(node):
     probabilities = [np.max(x.results) for x in node.children]
     probabilities = [x + abs(min(probabilities)) + 0.01 for x in probabilities]
     probabilities = [x / sum(probabilities) for x in probabilities]
-    print(len(node.children), [np.max(x.results) for x in node.children], probabilities)
     return np.random.choice(node.children, p=probabilities)
 
 
